@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ErrorModal from '../UI/ErrorModal';
 
 import IngredientForm from './IngredientForm';
 import IngredientList from './IngredientList';
@@ -6,6 +7,8 @@ import Search from './Search';
 
 const Ingredients = () => {
   const [userIngredient, setUserIngredient] = useState([])
+  const [isLoading, setLoading] = useState(false)
+  const [error, setError] = useState()
 
   useEffect(() => {
     fetch('https://react-hook-7031f.firebaseio.com/ingredients.json')
@@ -34,32 +37,49 @@ const Ingredients = () => {
   }, [])
 
   const addIngredientHandler = ingredient => {
+    setLoading(true)
     fetch('https://react-hook-7031f.firebaseio.com/ingredients.json', {
       method: 'POST',
       body: JSON.stringify(ingredient),
       headers: { 'COntent-Type': 'application/json'}
     })
-    .then(responce => {
+      .then(responce => {
+      setLoading(false)
       return responce.json()
     })
     .then(responceData => {
       setUserIngredient([...userIngredient, { id: responceData.name, ...ingredient}])
     })
+    .catch(error => {
+      setError(error.message)
+      setLoading(false)
+    })
   }
 
   const removeIngredientHandler = ingredientId => {
+    setLoading(true)
     fetch(`https://react-hook-7031f.firebaseio.com/ingredients/${ingredientId}.json`, {
       method: 'DELETE',
     })
     .then(responce => {
-      setUserIngredient(prevIngredients => 
+    setLoading(false)
+    setUserIngredient(prevIngredients => 
         prevIngredients.filter(ingredient => ingredient.id !== ingredientId ))
     })
+    .catch(error => {
+      setError(error.message)
+      setLoading(false)
+    })
   }
-
+  
+  const closeError = () => {
+    setError(false)
+  }
+  console.log('msg print');
   return (
     <div className="App">
-      <IngredientForm  onIngredientChange={addIngredientHandler}/>
+      {error && <ErrorModal onClose={closeError}>{ error }</ErrorModal>}
+      <IngredientForm onIngredientChange={addIngredientHandler} loading={ isLoading }/>
 
       <section>
         <Search onFilterChange={filterChabgedHandler}/>
